@@ -29,18 +29,11 @@ class ConfigIntegrityTest extends ExistingSiteBase {
   public function testConfig() {
     $assert_session = $this->assertSession();
 
-    // Assert that all install tasks have done what they should do.
-    // @see lightning_install_tasks()
-    $account = \Drupal::entityTypeManager()
-      ->getStorage('user')
-      ->load(1);
-    $this->assertInstanceOf(UserInterface::class, $account);
-    /** @var \Drupal\user\UserInterface $account */
-    $this->assertTrue($account->hasRole('administrator'));
-
+    // Assert that all install tasks have done what they should do, and
+    // configuration overrides have been applied correctly.
     $this->assertSame('/node', $this->config('system.site')->get('page.front'));
     $this->assertSame(UserInterface::REGISTER_ADMINISTRATORS_ONLY, $this->config('user.settings')->get('register'));
-    $this->assertTrue(Role::load(Role::AUTHENTICATED_ID)->hasPermission('access shortcuts'));
+    $this->assertPermissions(Role::AUTHENTICATED_ID, 'access shortcuts');
     $theme_config = $this->config('system.theme');
     $this->assertSame('bartik', $theme_config->get('default'));
     $this->assertSame('claro', $theme_config->get('admin'));
@@ -52,15 +45,18 @@ class ConfigIntegrityTest extends ExistingSiteBase {
 
     // lightning_core_update_8002() marks a couple of core view modes as
     // internal.
-    $view_modes = EntityViewMode::loadMultiple(['node.rss', 'node.search_index']);
+    $view_modes = EntityViewMode::loadMultiple([
+      'node.rss',
+      'node.search_index',
+    ]);
     /** @var \Drupal\Core\Entity\EntityViewModeInterface $view_mode */
     foreach ($view_modes as $view_mode) {
       $this->assertTrue($view_mode->getThirdPartySetting('lightning_core', 'internal'));
     }
 
     // All users should be able to view media items.
-    $this->assertPermissions('anonymous', 'view media');
-    $this->assertPermissions('authenticated', 'view media');
+    $this->assertPermissions(Role::ANONYMOUS_ID, 'view media');
+    $this->assertPermissions(Role::AUTHENTICATED_ID, 'view media');
     // Media creators can use bulk upload.
     $this->assertPermissions('media_creator', 'dropzone upload files');
 

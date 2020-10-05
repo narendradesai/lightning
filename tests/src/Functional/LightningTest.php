@@ -3,6 +3,7 @@
 namespace Drupal\Tests\lightning\Functional;
 
 use Drupal\Tests\BrowserTestBase;
+use Drupal\user\Entity\Role;
 
 /**
  * Tests integrated functionality of the Lightning profile.
@@ -81,6 +82,11 @@ class LightningTest extends BrowserTestBase {
     // ...and that the changes it makes are reflected in the system.
     $this->assertArrayHasKey('ban', $module_list);
     $this->assertArrayNotHasKey('lightning_search', $module_list);
+
+    /** @var \Drupal\user\RoleInterface $role */
+    $role = Role::load(Role::AUTHENTICATED_ID);
+    // This permission is added in Lightning Extender's configuration overrides.
+    $this->assertTrue($role->hasPermission('access toolbar'));
 
     $this->doModerationDashboardTest();
     $this->doTextBlockTest();
